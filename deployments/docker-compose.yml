@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  db:
+    build:
+      context: ./mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: api_db
+      MYSQL_USER: docker
+      MYSQL_PASSWORD: docker
+    ports:
+      - "3306:3306"
+    container_name: api_db
+    tty: true
+  api:
+    build:
+      context: ./../
+      dockerfile: ./deployments/api/Dockerfile
+      args:
+        - APP_NAME=api
+    environment:
+      HTTP_ADDR: 0.0.0.0:8080
+      DB_CONN: docker:docker@tcp(db:3306)/api_db
+    ports:
+      - "8080:8080"
+    container_name: api_server
+    tty: true
+    depends_on:
+      - db
+  delivery:
+    build:
+      context: ./../
+      dockerfile: ./deployments/api/Dockerfile
+      args:
+        - APP_NAME=delivery
+    environment:
+      HTTP_ADDR: 0.0.0.0:8081
+    ports:
+      - "8081:8081"
+    container_name: delivery_server
+    tty: true
