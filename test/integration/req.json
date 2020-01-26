@@ -1,0 +1,180 @@
+{
+	"info": {
+		"_postman_id": "e3e748df-3e3f-4b24-b64a-ad76be4be47a",
+		"name": "BezosTest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8080/v1/orders",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "aabf0814-ab27-49ce-a072-c27b9f4f3b1a",
+						"exec": [
+							"const jsonData = JSON.parse(responseBody);",
+							"",
+							"tests[\"Is success\"] = jsonData.success === true;",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "53418757-6707-499a-a6eb-c1df2537799c",
+						"exec": [
+							"// in the pre-request script",
+							"function getRandomInt(max) {",
+							"  return Math.floor(Math.random() * Math.floor(max));",
+							"}",
+							"",
+							"var body = [",
+							"    {",
+							"      \"id\": getRandomInt(9999999),",
+							"      \"email\": \"jon@doe.ca\",",
+							"      \"total_price\": \"254.98\",",
+							"      \"total_weight_grams\": 100,",
+							"      \"order_number\": getRandomInt(9999999),",
+							"      \"shipping_lines\": [",
+							"        {",
+							"          \"id\": getRandomInt(9999999),",
+							"          \"title\": \"Generic Shipping\",",
+							"          \"price\": \"10.00\"",
+							"        }",
+							"      ],",
+							"      \"shipping_address\": {",
+							"        \"first_name\": \"Steve\",",
+							"        \"address1\": \"123 Shipping Street\",",
+							"        \"city\": \"Shippington\",",
+							"        \"postcode\": \"se26hg\"",
+							"      }",
+							"    },",
+							"    {",
+							"      \"id\": getRandomInt(9999999),",
+							"      \"email\": \"jane@doe.uk\",",
+							"      \"total_price\": \"30.00\",",
+							"      \"total_weight_grams\": getRandomInt(9999999),",
+							"      \"order_number\": getRandomInt(9999999),",
+							"      \"shipping_lines\": [",
+							"        {",
+							"          \"id\": getRandomInt(9999999),",
+							"          \"title\": \"Next Day\",",
+							"          \"price\": \"25.00\"",
+							"        }",
+							"      ],",
+							"      \"shipping_address\": {",
+							"        \"first_name\": \"Bob\",",
+							"        \"address1\": \"89 Shipping Lane\",",
+							"        \"city\": \"Shipville\",",
+							"        \"postcode\": \"cb227hd\"",
+							"      }",
+							"    }",
+							" ];",
+							" ",
+							"",
+							"pm.environment.set('req_body', JSON.stringify(body));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "username",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/javascript",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{req_body}}",
+					"options": {
+						"raw": {
+							"language": "javascript"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/orders?",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"orders"
+					],
+					"query": [
+						{
+							"key": "coupon",
+							"value": "dkhe3d",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8081/api/orders/create",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "63a9406f-532f-47b6-9f55-fa1376cc1f33",
+						"exec": [
+							"const jsonData = JSON.parse(responseBody);",
+							"",
+							"tests[\"Is success\"] = jsonData.success === true;",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/orders/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"orders",
+						"create"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
