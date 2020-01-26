@@ -66,3 +66,13 @@ curl --location --request POST 'http://localhost:8080/v1/orders' \
   ]'
 
 ```
+
+To run the integration tests install [NewMan](https://www.npmjs.com/package/newman):
+
+```
+npm install -g newman
+
+cd ./test/integration
+newman run
+
+```
