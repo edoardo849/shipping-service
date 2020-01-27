@@ -133,14 +133,21 @@ func (s Service) AddOrders(o OrdersCreateReq) error {
 				return err
 			}
 		}
+	}
 
+	if err := tx.Commit(); err != nil {
+		log.Println("Couldn't commit the transaction")
+		return err
+	}
+
+	for i := 0; i < oLen; i++ {
+		currOrder := o[i]
 		log.Printf("Delivering order #%d\n", currOrder.ID)
 		s.deliverOrderChan <- currOrder
 		log.Printf("Delivered order #%d\n", currOrder.ID)
-
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // Despatch saves the despatcher's information
