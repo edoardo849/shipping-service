@@ -83,7 +83,7 @@ func (s *Service) Start(orderChan chan order.CreateReq) func() {
 				err := s.orderService.Despatch(d)
 				if err != nil {
 					log.Println("Could not save the despatch information", err.Error())
-					// delete the delivery here
+					//TODO delete the delivery here
 					break
 				}
 				log.Println("Delivery information saved, package on the way 📦")
