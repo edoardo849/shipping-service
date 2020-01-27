@@ -40,11 +40,11 @@ type response struct {
 type Service struct {
 	httpClient   *http.Client
 	addr         string
-	orderService order.Service
+	orderService order.ServiceInt
 }
 
 //New is the factory that initialises the Delivery service
-func New(httpClient *http.Client, addr string, orderService order.Service) Service {
+func New(httpClient *http.Client, addr string, orderService order.ServiceInt) Service {
 	return Service{
 		httpClient:   httpClient,
 		addr:         addr,

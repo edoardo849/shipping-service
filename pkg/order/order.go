@@ -55,6 +55,12 @@ func New(db *sql.DB, deliverOrderChan chan CreateReq) Service {
 	}
 }
 
+// ServiceInt is the order's service interface
+type ServiceInt interface {
+	AddOrders(o OrdersCreateReq) error
+	Despatch(d Dispatch) error
+}
+
 // Service keeps the logic to perform CRUD operations
 // against the Database
 type Service struct {
