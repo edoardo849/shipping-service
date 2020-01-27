@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -35,14 +36,79 @@ type response struct {
 	ID      int64 `json:"id"`
 }
 
+// Service is the delivery service
+type Service struct {
+	httpClient   *http.Client
+	addr         string
+	orderService order.Service
+}
+
+//New is the factory that initialises the Delivery service
+func New(httpClient *http.Client, addr string, orderService order.Service) Service {
+	return Service{
+		httpClient:   httpClient,
+		addr:         addr,
+		orderService: orderService,
+	}
+}
+
+//Start starts the delivery service
+func (s *Service) Start(orderChan chan order.CreateReq) func() {
+
+	stop := make(chan struct{}, 1)
+	deliveryChan := make(chan order.Dispatch, 1)
+
+	go func() {
+		log.Println("Starting the delivery service 🚚")
+		for {
+			select {
+			case o := <-orderChan:
+				log.Println("Received order:", o.ID)
+				res, err := s.deliver(o)
+				if err != nil {
+					log.Println("Error while calling the delivery service", err.Error())
+					continue
+				}
+				status := "success"
+				if !res.Success {
+					status = "error"
+				}
+				deliveryChan <- order.Dispatch{
+					OrderID:      o.ID,
+					DispatcherID: res.ID,
+					Status:       status,
+				}
+			case d := <-deliveryChan:
+				log.Println("Recevied delivery", d)
+				err := s.orderService.Despatch(d)
+				if err != nil {
+					log.Println("Could not save the despatch information", err.Error())
+					// delete the delivery here
+				}
+				log.Println("Delivery information saved, package on the way 📦")
+
+			case <-stop:
+				log.Println("Received stop signal, stopping the delivery service")
+				close(orderChan)
+				close(deliveryChan)
+				return
+			}
+		}
+	}()
+
+	return func() {
+		stop <- struct{}{}
+	}
+}
+
 //Deliver delivers the order
 // TODO: accept http interface to that it becomes testable
 // TODO: accept a global variable for the shipping service address
-func Deliver(o order.OrderCreateReq) (int64, error) {
+func (s *Service) deliver(o order.CreateReq) (response, error) {
 
 	priceFloat, err := strconv.ParseFloat(o.ShippingLines[0].Price, 64)
 	if err != nil {
-		return 0, err
+		return response{}, err
 	}
 
 	wFloat := float64(o.TotalWeightGrams)
@@ -65,18 +131,17 @@ func Deliver(o order.OrderCreateReq) (int64, error) {
 
 	if err != nil {
 		fmt.Printf("The HTTP request failed with error %s\n", err)
-		return 0, err
+		return response{}, err
 	}
 
 	decoder := json.NewDecoder(r.Body)
 
-	var response response
-	err = decoder.Decode(&response)
+	var res response
+	err = decoder.Decode(&res)
 	if err != nil {
 		fmt.Println("Could not parse the response", err)
-
-		return 0, err
+		return response{}, err
 	}
 
-	return response.ID, nil
+	return res, nil
 }

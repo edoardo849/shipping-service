@@ -6,7 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/edoardo849/bezos/pkg/storage"
+	"github.com/edoardo849/bezos/pkg/order"
+
 	"github.com/gorilla/mux"
 )
 
@@ -16,20 +17,20 @@ const (
 )
 
 // New Creates a new handler
-func New(s *storage.Storage, r *mux.Router, stopChan chan struct{}) *Server {
+func New(os order.Service, r *mux.Router, stopChan chan struct{}) *Server {
 	return &Server{
-		storage:  s,
-		router:   mux.NewRouter(),
-		stopChan: stopChan,
+		orderService: os,
+		router:       mux.NewRouter(),
+		stopChan:     stopChan,
 	}
 }
 
 // Server is the server
 type Server struct {
-	storage  *storage.Storage
-	router   *mux.Router
-	stopChan chan struct{}
-	http     *http.Server
+	orderService order.Service
+	router       *mux.Router
+	stopChan     chan struct{}
+	http         *http.Server
 }
 
 // Run runs the server
@@ -58,7 +59,7 @@ func (s *Server) registerHandlers() {
 	// See http://www.gorillatoolkit.org/pkg/mux
 	r := s.router.PathPrefix(fmt.Sprintf("/%s", apiVersion)).Subrouter()
 
-	r.HandleFunc("/orders", withBasicAuth(handleOrdersCreate(s.storage))).Methods("POST")
+	r.HandleFunc("/orders", withBasicAuth(handleOrdersCreate(s.orderService))).Methods("POST")
 
 	r.NotFoundHandler = handle404()
 

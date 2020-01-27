@@ -12,7 +12,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/edoardo849/bezos/pkg/api"
-	"github.com/edoardo849/bezos/pkg/storage"
+	"github.com/edoardo849/bezos/pkg/delivery"
+	"github.com/edoardo849/bezos/pkg/order"
 	"github.com/gorilla/mux"
 )
 
@@ -27,6 +28,11 @@ func main() {
 		dbConn = "docker:docker@tcp(db:3306)/api_db"
 	}
 
+	deliveryAddr := os.Getenv("DELIVERY_ADDR")
+	if deliveryAddr == "" {
+		deliveryAddr = "docker:docker@tcp(db:3306)/api_db"
+	}
+
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
 		log.Fatal(err)
@@ -38,9 +44,20 @@ func main() {
 
 	stopServerChan := make(chan struct{})
 
-	st := storage.New(db)
+	orderChan := make(chan order.CreateReq, 1)
+	orderService := order.New(db, orderChan)
+	delivery := delivery.New(
+		&http.Client{
+			Timeout: 5 * time.Second,
+		},
+		deliveryAddr,
+		orderService,
+	)
+
+	stopDeliveryService := delivery.Start(orderChan)
+
 	server := api.New(
-		st,
+		orderService,
 		mux.NewRouter(),
 		stopServerChan,
 	)
@@ -63,5 +80,6 @@ func main() {
 
 	<-stop
 	log.Println("shutting down gracefully")
+	stopDeliveryService()
 	stopServerChan <- struct{}{}
 }

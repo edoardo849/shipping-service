@@ -22,6 +22,7 @@ services:
     environment:
       HTTP_ADDR: 0.0.0.0:8080
       DB_CONN: docker:docker@tcp(db:3306)/api_db
+      DELIVERY_ADDR: delivery:8081
     ports:
       - "8080:8080"
     container_name: api_server

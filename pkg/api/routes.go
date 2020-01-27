@@ -6,10 +6,9 @@ import (
 	"net/http"
 
 	"github.com/edoardo849/bezos/pkg/order"
-	"github.com/edoardo849/bezos/pkg/storage"
 )
 
-func handleOrdersCreate(s *storage.Storage) http.HandlerFunc {
+func handleOrdersCreate(os order.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		decoder := json.NewDecoder(r.Body)
@@ -22,7 +21,7 @@ func handleOrdersCreate(s *storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		err = s.AddOrders(req)
+		err = os.AddOrders(req)
 		if err != nil {
 			log.Println("Error while saving the orders", err.Error())
 			respondWithError(w, http.StatusInternalServerError, err.Error())
