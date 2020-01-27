@@ -56,7 +56,7 @@ func New(httpClient *http.Client, addr string, orderService order.Service) Servi
 func (s *Service) Start(orderChan chan order.CreateReq) func() {
 
 	stop := make(chan struct{}, 1)
-	deliveryChan := make(chan order.Dispatch, 1)
+	deliveryChan := make(chan order.Dispatch, 10)
 
 	go func() {
 		log.Println("Starting the delivery service 🚚")
@@ -67,7 +67,7 @@ func (s *Service) Start(orderChan chan order.CreateReq) func() {
 				res, err := s.deliver(o)
 				if err != nil {
 					log.Println("Error while calling the delivery service", err.Error())
-					continue
+					break
 				}
 				status := "success"
 				if !res.Success {
@@ -84,6 +84,7 @@ func (s *Service) Start(orderChan chan order.CreateReq) func() {
 				if err != nil {
 					log.Println("Could not save the despatch information", err.Error())
 					// delete the delivery here
+					break
 				}
 				log.Println("Delivery information saved, package on the way 📦")
 
@@ -102,8 +103,6 @@ func (s *Service) Start(orderChan chan order.CreateReq) func() {
 }
 
 //Deliver delivers the order
-// TODO: accept http interface to that it becomes testable
-// TODO: accept a global variable for the shipping service address
 func (s *Service) deliver(o order.CreateReq) (response, error) {
 
 	priceFloat, err := strconv.ParseFloat(o.ShippingLines[0].Price, 64)
@@ -126,12 +125,21 @@ func (s *Service) deliver(o order.CreateReq) (response, error) {
 		},
 	}
 
-	jsonValue, _ := json.Marshal(jsonData)
-	r, err := http.Post("http://delivery:8081/api/orders/create", "application/json", bytes.NewBuffer(jsonValue))
-
+	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		fmt.Printf("The HTTP request failed with error %s\n", err)
+		log.Printf("Could not parse the delivery data: %s \n", err.Error())
 		return response{}, err
+	}
+	log.Printf("Sending the delivery for Order #%d to %s \n", o.ID, s.addr)
+	r, err := s.httpClient.Post(fmt.Sprintf("%s/api/orders/create", s.addr), "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Printf("The HTTP request failed with error %s\n", err)
+		return response{}, err
+	}
+
+	log.Printf("Status Code %d\n", r.StatusCode)
+	if r.StatusCode != http.StatusOK {
+		return response{}, fmt.Errorf("Received Status Code %d", r.StatusCode)
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -139,9 +147,10 @@ func (s *Service) deliver(o order.CreateReq) (response, error) {
 	var res response
 	err = decoder.Decode(&res)
 	if err != nil {
-		fmt.Println("Could not parse the response", err)
+		log.Println("Could not parse the response", err)
 		return response{}, err
 	}
+	log.Println("Order delivered", o.ID)
 
 	return res, nil
 }

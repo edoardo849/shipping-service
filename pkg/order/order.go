@@ -13,26 +13,12 @@ type ToShippingLine struct {
 	Price string `json:"price"`
 }
 
-//ToShippingLineDB is
-type ToShippingLineDB struct {
-	ShippingLineID int64  `json:"shipping_line_id"`
-	OrderID        int64  `json:"order_id"`
-	Title          string `json:"title"`
-	Price          string `json:"price"`
-}
-
 //ShippingAddress is the address of the shipment
 type ShippingAddress struct {
 	FirstName string `json:"first_name"`
 	Address1  string `json:"address1"`
 	City      string `json:"city"`
 	PostCode  string `json:"postcode"`
-}
-
-//ShippingAddressDB is the address of the shipment
-type ShippingAddressDB struct {
-	OrderID int64 `json:"order_id"`
-	ShippingAddress
 }
 
 //Order is an order
@@ -71,14 +57,12 @@ func New(db *sql.DB, deliverOrderChan chan CreateReq) Service {
 
 // Service keeps the logic to perform CRUD operations
 // against the Database
-// TODO: accept http interface to pass to the Shipping Service
 type Service struct {
 	db               *sql.DB
 	deliverOrderChan chan CreateReq
 }
 
 //AddOrders saves a user to the storage
-//TODO: pass a channel of order.OrdersCreateReq so that we can create deliveries
 func (s Service) AddOrders(o OrdersCreateReq) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -108,8 +92,8 @@ func (s Service) AddOrders(o OrdersCreateReq) error {
 	oLen := len(o)
 	for i := 0; i < oLen; i++ {
 
-		log.Printf("Processing order %d 📤\n", i)
 		currOrder := o[i]
+		log.Printf("Processing order #%d 📤\n", currOrder.ID)
 		_, err = orderTx.Exec(
 			currOrder.ID,
 			currOrder.Email,
@@ -119,8 +103,7 @@ func (s Service) AddOrders(o OrdersCreateReq) error {
 		)
 		if err != nil {
 			tx.Rollback()
-			log.Println("Failed to save an order", err.Error())
-
+			log.Printf("Failed to save order #%d: %s", currOrder.ID, err.Error())
 			return err
 		}
 
@@ -145,7 +128,9 @@ func (s Service) AddOrders(o OrdersCreateReq) error {
 			}
 		}
 
+		log.Printf("Delivering order #%d\n", currOrder.ID)
 		s.deliverOrderChan <- currOrder
+		log.Printf("Delivered order #%d\n", currOrder.ID)
 
 	}
 
@@ -166,11 +151,14 @@ func (s Service) Despatch(d Dispatch) error {
 		return err
 	}
 
-	// Do not rollback if a delivery wasn't saved
-	//TODO remove this out of here and transform this into concurrent requests with goroutines through a channel of Orders
 	_, err = deliveryTx.Exec(d.OrderID, d.DispatcherID)
 	if err != nil {
+		tx.Rollback()
 		log.Println("Failed to save a delivery", err.Error())
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		log.Println("Failed to commit the transaction", err.Error())
 		return err
 	}
 
