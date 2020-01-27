@@ -13,12 +13,14 @@
 					"script": {
 						"id": "aabf0814-ab27-49ce-a072-c27b9f4f3b1a",
 						"exec": [
-							"const jsonData = JSON.parse(responseBody);",
+							"pm.test(\"Response is successful\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.eql(true);",
+							"});",
 							"",
-							"tests[\"Is success\"] = jsonData.success === true;",
-							"",
-							"",
-							""
+							"pm.test(\"Status code is 200\",  () => {",
+							"    pm.response.to.have.status(200);",
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -147,10 +149,19 @@
 					"script": {
 						"id": "63a9406f-532f-47b6-9f55-fa1376cc1f33",
 						"exec": [
-							"const jsonData = JSON.parse(responseBody);",
+							"pm.test(\"Response is successful\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.eql(true);",
+							"});",
 							"",
-							"tests[\"Is success\"] = jsonData.success === true;",
-							""
+							"pm.test(\"Response has an id\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.id).to.be.a(\"number\");",
+							"});",
+							"",
+							"pm.test(\"Status code is 200\",  () => {",
+							"    pm.response.to.have.status(200);",
+							"});"
 						],
 						"type": "text/javascript"
 					}
