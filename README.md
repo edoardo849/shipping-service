@@ -30,6 +30,7 @@ To run the integration tests install [NewMan](https://www.npmjs.com/package/newm
 ```
 npm install -g newman
 
+
 make integration-tests
 
 ```
